@@ -29,7 +29,9 @@ import org.elasticsearch.index.mapper.core.DateFieldMapper;
 import org.elasticsearch.index.mapper.core.StringFieldMapper;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.Map;
+import java.io.FileInputStream;
 
 import static org.elasticsearch.index.mapper.MapperBuilders.dateField;
 import static org.elasticsearch.index.mapper.MapperBuilders.stringField;
@@ -265,7 +267,7 @@ public class AttachmentMapper implements Mapper {
 
     @Override
     public void parse(ParseContext context) throws IOException {
-        byte[] content = null;
+        String content = null;
         String contentType = null;
         int indexedChars = defaultIndexedChars;
         String name = null;
@@ -273,7 +275,7 @@ public class AttachmentMapper implements Mapper {
         XContentParser parser = context.parser();
         XContentParser.Token token = parser.currentToken();
         if (token == XContentParser.Token.VALUE_STRING) {
-            content = parser.binaryValue();
+            content = parser.text();
         } else {
             String currentFieldName = null;
             while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
@@ -281,7 +283,7 @@ public class AttachmentMapper implements Mapper {
                     currentFieldName = parser.currentName();
                 } else if (token == XContentParser.Token.VALUE_STRING) {
                     if ("content".equals(currentFieldName)) {
-                        content = parser.binaryValue();
+                        content = parser.text();
                     } else if ("_content_type".equals(currentFieldName)) {
                         contentType = parser.text();
                     } else if ("_name".equals(currentFieldName)) {
@@ -306,7 +308,7 @@ public class AttachmentMapper implements Mapper {
         String parsedContent;
         try {
             // Set the maximum length of strings returned by the parseToString method, -1 sets no limit            
-            parsedContent = tika().parseToString(new FastByteArrayInputStream(content), metadata, indexedChars);
+            parsedContent = tika().parseToString(new FileInputStream(new File(content)), metadata, indexedChars);
         } catch (TikaException e) {
             throw new MapperParsingException("Failed to extract [" + indexedChars + "] characters of text for [" + name + "]", e);
         }
